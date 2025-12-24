@@ -33,14 +33,12 @@ def init_models():
     rewrite_llm = ChatOpenAI(model = "gpt-4.1-nano", streaming = False)
     
     retriever = vector_store.as_retriever(
-            search_kwargs = {"k": 25}
+            search_kwargs = {"k": 6}
             )
     
-    reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
-    
-    return client, retriever, reranker, answer_llm, rewrite_llm
+    return client, retriever, answer_llm, rewrite_llm
 
-client, retriever, reranker, answer_llm, rewrite_llm = init_models()
+client, retriever, answer_llm, rewrite_llm = init_models()
 
 def build_qdrant_filter(semester: int, subject: str, unit: int):
     return models.Filter(
@@ -65,16 +63,6 @@ def build_qdrant_filter(semester: int, subject: str, unit: int):
 def retrieve_similar_chunks(query, semester, subject, unit):
     qdrant_filter = build_qdrant_filter(semester, subject, unit)
     return retriever.invoke(query, filter = qdrant_filter)
-
-@traceable(name = "reranking")
-def rerank_chunks(query, chunks, batch_size = 8, top_n = 5):
-    if not chunks:
-        return []
-    
-    pairs = [(query, chunk.page_content) for chunk in chunks]
-    scores = reranker.predict(pairs, batch_size = batch_size)
-    ranked_docs = [doc for _, doc in sorted(zip(scores, chunks), key = lambda x: x[0], reverse = True)]
-    return ranked_docs[:top_n]
 
 @traceable(name = "query_rewrite")
 def rewrite_query(query, chat_history: list[ChatMessage]):
@@ -135,9 +123,7 @@ def rag_query_stream(request: RagQueryRequest):
         request.filters.unit
         )
     
-    top_docs = rerank_chunks(retrieval_query, docs)
-    
-    context = build_context(top_docs)
+    context = build_context(docs)
     
     if not context:
         yield "The provided context does not contain sufficient information to answer this question."

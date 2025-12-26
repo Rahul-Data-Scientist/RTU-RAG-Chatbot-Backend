@@ -6,14 +6,11 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from langchain_core.messages import HumanMessage, AIMessage
 
-from sentence_transformers import CrossEncoder
 from langsmith import traceable
 from langsmith.run_helpers import get_current_run_tree
 
 from schema import RagQueryRequest, ChatMessage
 from system_messages import final_prompt_system_message, rewrite_query_system_message
-
-from pathlib import Path
 
 load_dotenv()
 
@@ -39,6 +36,9 @@ def init_models():
     return client, retriever, answer_llm, rewrite_llm
 
 client, retriever, answer_llm, rewrite_llm = init_models()
+
+def sse_event(event: str, data: str):
+    return f"event: {event}\ndata: {data}\n\n"
 
 def build_qdrant_filter(semester: int, subject: str, unit: int):
     return models.Filter(
@@ -114,21 +114,31 @@ def rag_query_stream(request: RagQueryRequest):
             "unit": request.filters.unit
         })
     
-    retrieval_query = rewrite_query(request.query, request.chat_history) or request.query
-    
-    docs = retrieve_similar_chunks(
-        retrieval_query, 
-        request.filters.semester, 
-        request.filters.subject, 
-        request.filters.unit
-        )
-    
-    context = build_context(docs)
-    
-    if not context:
-        yield "The provided context does not contain sufficient information to answer this question."
-    
-    final_prompt = build_message(retrieval_query, context, request.chat_history)
-    for chunk in answer_llm.stream(final_prompt):
-        if chunk.content:
-            yield chunk.content
+    try:
+        yield sse_event("stage", "Understanding query")
+        retrieval_query = rewrite_query(request.query, request.chat_history) or request.query
+        
+        yield sse_event("stage", "Gathering information")
+        docs = retrieve_similar_chunks(
+            retrieval_query, 
+            request.filters.semester, 
+            request.filters.subject, 
+            request.filters.unit
+            )
+        
+        context = build_context(docs)
+        
+        if not context:
+            yield sse_event("error", "The provided context does not contain sufficient information to answer this question.")
+            yield sse_event("done", "END")
+            return
+        
+        yield sse_event("stage", "Finalising answer")
+        final_prompt = build_message(retrieval_query, context, request.chat_history)
+        for chunk in answer_llm.stream(final_prompt):
+            if chunk.content:
+                yield sse_event("token", chunk.content)
+        yield sse_event("done", "END")
+    except Exception as e:
+        yield sse_event("error", str(e))
+        yield sse_event("done", "END")

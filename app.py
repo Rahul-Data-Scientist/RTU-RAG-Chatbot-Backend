@@ -29,5 +29,5 @@ def health_check():
 def query_rag(request: RagQueryRequest):
     return StreamingResponse(
         rag_query_stream(request),
-        media_type = "text/plain"
+        media_type = "text/event-stream"
     )

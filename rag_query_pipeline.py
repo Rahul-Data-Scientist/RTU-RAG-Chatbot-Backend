@@ -6,7 +6,6 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from langchain_core.messages import HumanMessage, AIMessage
 
-from sentence_transformers import CrossEncoder
 from langsmith import traceable
 from langsmith.run_helpers import get_current_run_tree
 

@@ -20,7 +20,7 @@ load_dotenv()
 MAX_TURNS = 6
 
 def init_models():
-    client = QdrantClient(url = "http://localhost:6333")
+    client = QdrantClient(url="http://qdrant:6333")
 
     vector_store = QdrantVectorStore(
         collection_name = "rtu_curriculum",

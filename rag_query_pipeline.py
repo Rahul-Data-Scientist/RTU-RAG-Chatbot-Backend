@@ -31,7 +31,12 @@ def init_models():
     rewrite_llm = ChatOpenAI(model = "gpt-4.1-nano", streaming = False)
     
     retriever = vector_store.as_retriever(
-            search_kwargs = {"k": 6}
+            search_kwargs = {
+                "k": 6,
+                "search_params": {
+                    "hnsw_ef": 256
+                }
+                }
             )
     
     return client, retriever, answer_llm, rewrite_llm

@@ -5,14 +5,13 @@ from qdrant_client.http import models
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.tracers.context import tracing_v2_enabled
 
 from langsmith import traceable
 from langsmith.run_helpers import get_current_run_tree
 
 from schema import RagQueryRequest, ChatMessage
 from system_messages import final_prompt_system_message, rewrite_query_system_message
-
-from pathlib import Path
 
 load_dotenv()
 
@@ -102,32 +101,33 @@ def build_message(query, context, chat_history: list[ChatMessage]):
     
     return messages
 
-@traceable(name = "rag_query")
+@traceable(name = "rag_query", run_type = "chain")
 def rag_query_stream(request: RagQueryRequest):
     
-    run_tree = get_current_run_tree()
-    if run_tree is not None:
-        run_tree.metadata.update({
-            "semester": request.filters.semester,
-            "subject": request.filters.subject,
-            "unit": request.filters.unit
-        })
-    
-    retrieval_query = rewrite_query(request.query, request.chat_history) or request.query
-    
-    docs = retrieve_similar_chunks(
-        retrieval_query, 
-        request.filters.semester, 
-        request.filters.subject, 
-        request.filters.unit
-        )
-    
-    context = build_context(docs)
-    
-    if not context:
-        yield "The provided context does not contain sufficient information to answer this question."
-    
-    final_prompt = build_message(retrieval_query, context, request.chat_history)
-    for chunk in answer_llm.stream(final_prompt):
-        if chunk.content:
-            yield chunk.content
+    with tracing_v2_enabled(project_name = None):
+        run_tree = get_current_run_tree()
+        if run_tree is not None:
+            run_tree.metadata.update({
+                "semester": request.filters.semester,
+                "subject": request.filters.subject,
+                "unit": request.filters.unit
+            })
+        
+        retrieval_query = rewrite_query(request.query, request.chat_history) or request.query
+        
+        docs = retrieve_similar_chunks(
+            retrieval_query, 
+            request.filters.semester, 
+            request.filters.subject, 
+            request.filters.unit
+            )
+        
+        context = build_context(docs)
+        
+        if not context:
+            yield "The provided context does not contain sufficient information to answer this question."
+        
+        final_prompt = build_message(request.query, context, request.chat_history)
+        for chunk in answer_llm.stream(final_prompt):
+            if chunk.content:
+                yield chunk.content

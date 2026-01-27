@@ -34,8 +34,8 @@ jobs:
       # Tag & push image to ECR
       - name: Push image to ECR
         run: |
-          docker tag rag-backend:latest 698031349183.dkr.ecr.us-east-1.amazonaws.com/rag-backend:latest
-          docker push 698031349183.dkr.ecr.us-east-1.amazonaws.com/rag-backend:latest
+          docker tag rag-backend:latest 090618481080.dkr.ecr.us-east-1.amazonaws.com/rag-backend:latest
+          docker push 090618481080.dkr.ecr.us-east-1.amazonaws.com/rag-backend:latest
 
       # Deploy on EC2
       - name: Deploy on EC2
@@ -46,7 +46,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/rag-backend
-            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 698031349183.dkr.ecr.us-east-1.amazonaws.com
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 090618481080.dkr.ecr.us-east-1.amazonaws.com
             docker-compose pull
             docker-compose down
             docker-compose up -d

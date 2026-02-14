@@ -27,8 +27,8 @@ def init_models():
     )
 
     
-    answer_llm = ChatOpenAI(model = "gpt-4.1-nano", streaming = True)
-    rewrite_llm = ChatOpenAI(model = "gpt-4.1-nano", streaming = False)
+    answer_llm = ChatOpenAI(model = "gpt-4.1-mini", streaming = True)
+    rewrite_llm = ChatOpenAI(model = "gpt-4.1-mini", streaming = False)
     
     retriever = vector_store.as_retriever(
             search_kwargs = {

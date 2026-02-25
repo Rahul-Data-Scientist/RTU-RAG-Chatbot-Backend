@@ -45,8 +45,27 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -e
+
             cd /home/ubuntu/rag-backend
-            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 090618481080.dkr.ecr.us-east-1.amazonaws.com
-            docker-compose pull
+
+            echo "Logging into ECR..."
+            aws ecr get-login-password --region us-east-1 | \
+              docker login --username AWS --password-stdin 090618481080.dkr.ecr.us-east-1.amazonaws.com
+
+            echo "Stopping containers..."
             docker-compose down
-            docker-compose up -d
+
+            echo "Removing old containers..."
+            docker container prune -f
+
+            echo "Removing old images..."
+            docker image prune -a -f
+
+            echo "Pulling latest images..."
+            docker-compose pull
+
+            echo "Starting fresh containers..."
+            docker-compose up -d --force-recreate
+
+            echo "Deployment completed!"

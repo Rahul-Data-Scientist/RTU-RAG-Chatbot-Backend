@@ -54,7 +54,7 @@ jobs:
               docker login --username AWS --password-stdin 090618481080.dkr.ecr.us-east-1.amazonaws.com
 
             echo "Stopping containers..."
-            docker-compose down
+            docker compose down
 
             echo "Removing old containers..."
             docker container prune -f
@@ -63,9 +63,9 @@ jobs:
             docker image prune -a -f
 
             echo "Pulling latest images..."
-            docker-compose pull
+            docker compose pull
 
             echo "Starting fresh containers..."
-            docker-compose up -d --force-recreate
+            docker compose up -d --force-recreate
 
             echo "Deployment completed!"

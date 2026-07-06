@@ -19,7 +19,11 @@ import os
 load_dotenv()
 
 def init_models():
-    client = QdrantClient(url="http://qdrant:6333")
+    client = QdrantClient(
+        url=os.environ["QDRANT_CLUSTER_ENDPOINT"],
+        api_key=os.environ["QDRANT_API_KEY"],
+        timeout=60.0
+    )
 
     vector_store = QdrantVectorStore(
         collection_name = "rtu_curriculum",

@@ -14,6 +14,7 @@ app = FastAPI(
     version = "1.0.0"
 )
 
+# CORS Middleware to block unauthorized domains
 app.add_middleware(
     CORSMiddleware,
     # Replace '*' with your specific production frontend URL to block unauthorized domains

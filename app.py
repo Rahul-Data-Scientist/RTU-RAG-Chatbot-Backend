@@ -16,10 +16,13 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins = ['*'],
-    allow_credentials = True,
-    allow_methods = ['*'],
-    allow_headers = ['*']
+    # Replace '*' with your specific production frontend URL to block unauthorized domains
+    allow_origins=[
+        "https://syllabusawarechatbot.space",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all standard HTTP methods (GET, POST, OPTIONS, etc.)
+    allow_headers=["*"],  # Allows all headers sent by the Streamlit frontend
 )
 
 @app.get("/health")
